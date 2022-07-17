@@ -2,8 +2,6 @@ import React from 'react';
 import {
   StyleSheet,
   TextInput,
-  NativeSyntheticEvent,
-  TextInputChangeEventData,
   View,
   Text,
   TouchableOpacity,
@@ -11,7 +9,7 @@ import {
 import debounce from 'lodash.debounce';
 import {translate} from '../services/translate';
 import {Languages, getLanguageText} from '../utils/const';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const Body = () => {
   const [text, setText] = React.useState<string>('');
@@ -24,15 +22,18 @@ const Body = () => {
       const result = await translate({q, source, target});
 
       setTranslatedText(result);
-    }, 100),
+    }, 200),
   ).current;
 
-  const handleChange = (
-    event: NativeSyntheticEvent<TextInputChangeEventData>,
-  ) => {
-    const {text: nextValue} = event.nativeEvent;
-    setText(nextValue);
-    search(nextValue);
+  const handleChange = (val: string) => {
+    setText(val);
+
+    if (!val) {
+      search.cancel();
+      setTranslatedText('');
+    } else {
+      search(val);
+    }
   };
 
   const setSourceAndTargetLanguage = () => {
@@ -44,19 +45,25 @@ const Body = () => {
   };
 
   return (
-    <>
-      <TextInput
-        style={styles.input}
-        placeholder="Metin Girin"
-        defaultValue={text}
-        onChange={handleChange}
-        maxLength={1000}
-      />
+    <View style={styles.container}>
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={styles.input}
+          placeholder="Metin Girin"
+          defaultValue={text}
+          onChangeText={handleChange}
+          maxLength={1000}
+        />
+      </View>
 
       <View style={styles.divider} />
 
-      <View style={styles.result}>
-        <Text>{translatedText}</Text>
+      <View
+        style={[
+          styles.resultWrapper,
+          translatedText ? styles.hasTranslatedText : '',
+        ]}>
+        <Text style={styles.result}>{translatedText}</Text>
       </View>
 
       <View style={styles.actions}>
@@ -68,31 +75,57 @@ const Body = () => {
             style={styles.langButton}
             onPress={setSourceAndTargetLanguage}
             activeOpacity={1}>
-            <MaterialIcons name="swap-horiz" size={32} color="#333" />
+            <MaterialCommunityIcons
+              name="swap-horizontal"
+              size={32}
+              color="#333"
+            />
           </TouchableOpacity>
         </View>
         <View style={[styles.actionItem, styles.langLabel]}>
           <Text style={styles.langLabelText}>{getLanguageText(target)}</Text>
         </View>
       </View>
-    </>
+
+      <View style={styles.voiceWrapper}>
+        <TouchableOpacity style={styles.voiceButton}>
+          <MaterialCommunityIcons
+            name="microphone-outline"
+            size={32}
+            color="#fff"
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    padding: 15,
+  },
+  inputWrapper: {},
   input: {
     width: '100%',
     fontSize: 25,
     padding: 5,
   },
   divider: {},
-  result: {},
+  resultWrapper: {},
+  hasTranslatedText: {
+    marginBottom: 15,
+  },
+  result: {
+    width: '100%',
+    fontSize: 25,
+    padding: 5,
+  },
   actions: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    padding: 15,
+    marginBottom: 15,
   },
   actionItem: {
     padding: 4,
@@ -114,6 +147,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
   },
   langButton: {},
+  voiceWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  voiceButton: {
+    backgroundColor: '#333',
+    borderRadius: 50,
+    padding: 15,
+  },
 });
 
 export default Body;
