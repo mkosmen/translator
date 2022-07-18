@@ -10,6 +10,7 @@ import debounce from 'lodash.debounce';
 import {translate} from '../services/translate';
 import {Languages, getLanguageText} from '../utils/const';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {create} from '../models/translate';
 
 interface TranslateValueObject {
   q: string;
@@ -28,12 +29,13 @@ const Body = () => {
 
   React.useEffect(() => {
     const fetchData = debounce(async () => {
+      create(translateValues.q);
       const result = await translate(translateValues);
 
       setTranslatedText(result);
     }, 100);
 
-    fetchData();
+    translateValues.q && fetchData();
   }, [translateValues]);
 
   const handleChange = (text: string) => {
