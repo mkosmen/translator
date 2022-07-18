@@ -11,37 +11,55 @@ import {translate} from '../services/translate';
 import {Languages, getLanguageText} from '../utils/const';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
+interface TranslateValueObject {
+  q: string;
+  source: Languages;
+  target: Languages;
+}
+
 const Body = () => {
-  const [text, setText] = React.useState<string>('');
-  const [source, setSource] = React.useState<Languages>('tr');
-  const [target, setTarget] = React.useState<Languages>('en');
+  const [translateValues, setTranslateValues] =
+    React.useState<TranslateValueObject>({
+      q: '',
+      source: 'tr',
+      target: 'en',
+    });
   const [translatedText, setTranslatedText] = React.useState<string>('');
 
-  const search = React.useRef(
-    debounce(async q => {
-      const result = await translate({q, source, target});
+  React.useEffect(() => {
+    const fetchData = debounce(async () => {
+      const result = await translate(translateValues);
 
       setTranslatedText(result);
-    }, 200),
-  ).current;
+    }, 100);
 
-  const handleChange = (val: string) => {
-    setText(val);
+    fetchData();
+  }, [translateValues]);
 
-    if (!val) {
-      search.cancel();
+  const handleChange = (text: string) => {
+    setTranslateValues(old => {
+      return {
+        ...old,
+        q: text,
+      };
+    });
+
+    if (!text) {
       setTranslatedText('');
-    } else {
-      search(val);
     }
   };
 
   const setSourceAndTargetLanguage = () => {
-    const newSourceLanguage = source === 'en' ? 'tr' : 'en';
+    const newSourceLanguage = translateValues.source === 'en' ? 'tr' : 'en';
     const newTargetLanguage = newSourceLanguage === 'en' ? 'tr' : 'en';
 
-    setSource(newSourceLanguage);
-    setTarget(newTargetLanguage);
+    setTranslateValues(old => {
+      return {
+        ...old,
+        source: newSourceLanguage,
+        target: newTargetLanguage,
+      };
+    });
   };
 
   return (
@@ -50,7 +68,7 @@ const Body = () => {
         <TextInput
           style={styles.input}
           placeholder="Metin Girin"
-          defaultValue={text}
+          defaultValue={translateValues.q}
           onChangeText={handleChange}
           maxLength={1000}
         />
@@ -68,7 +86,9 @@ const Body = () => {
 
       <View style={styles.actions}>
         <View style={[styles.actionItem, styles.langLabel]}>
-          <Text style={styles.langLabelText}>{getLanguageText(source)}</Text>
+          <Text style={styles.langLabelText}>
+            {getLanguageText(translateValues.source)}
+          </Text>
         </View>
         <View style={styles.langSelector}>
           <TouchableOpacity
@@ -83,7 +103,9 @@ const Body = () => {
           </TouchableOpacity>
         </View>
         <View style={[styles.actionItem, styles.langLabel]}>
-          <Text style={styles.langLabelText}>{getLanguageText(target)}</Text>
+          <Text style={styles.langLabelText}>
+            {getLanguageText(translateValues.target)}
+          </Text>
         </View>
       </View>
 
