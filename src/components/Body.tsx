@@ -29,7 +29,9 @@ type Props = {
 };
 
 const Body = (props: Props) => {
-  const [searchText, setSearchText] = useState<string | undefined>(props.text);
+  const {handleChange, text} = props;
+
+  const [searchText, setSearchText] = useState<string | undefined>(text);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [sourceLanguage, setSourceLanguage] = useState<Languages>(props.source);
   const [targetLanguage, setTargetLanguage] = useState<Languages>(props.target);
@@ -71,9 +73,9 @@ const Body = (props: Props) => {
     (q: string) => {
       setSearchText(q);
 
-      props.handleChange(q);
+      handleChange(q);
     },
-    [props],
+    [handleChange],
   );
 
   useEffect(() => {
@@ -94,8 +96,8 @@ const Body = (props: Props) => {
   }, [handleTextChange]);
 
   useEffect(() => {
-    setSearchText(props.text);
-  }, [props.text]);
+    setSearchText(text);
+  }, [text]);
 
   return (
     <View style={styles.container}>

@@ -1,22 +1,30 @@
 import Realm from 'realm';
-const {UUID} = Realm.BSON;
+// const {UUID} = Realm.BSON;
+
+export const uuid = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = (Math.random() * 16) | 0,
+      v = c == 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 const Sentence = {
   name: 'Sentence',
   properties: {
-    _id: 'uuid',
+    id: 'string',
     text: 'string',
     source: 'string',
     target: 'string',
     createdAt: 'date',
   },
-  primaryKey: '_id',
+  primaryKey: 'id',
 };
 
 const databaseOptions = {
-  path: 'translator.realm',
+  // path: 'translator.realm',
   schema: [Sentence],
-  schemaVersion: 2,
+  schemaVersion: 3,
 };
 
 const realm = new Realm(databaseOptions);
@@ -28,15 +36,15 @@ type createProps = {
 };
 export const create = (props: createProps) => {
   try {
-    const data = {
-      _id: new UUID(),
-      createdAt: new Date(),
-      ...props,
-    };
-
-    console.log('record data', data);
-
     realm.write(() => {
+      const data = {
+        id: uuid(),
+        createdAt: new Date(),
+        ...props,
+      };
+
+      console.log('record data', data);
+
       realm.create('Sentence', data);
     });
   } catch (errors) {

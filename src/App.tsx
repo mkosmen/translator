@@ -35,13 +35,12 @@ const App = () => {
 
   const search = useRef(
     debounce(async (props: TranslateProps) => {
-      console.log('debounce search');
       const result = await translate(props);
 
       setTranslatedText(result);
 
       // TODO: Problem burada
-      // ({text: result, source: props.source, target: props.target});
+      create({text: props.q, source: props.source, target: props.target});
     }, 100),
   ).current;
 
@@ -69,11 +68,10 @@ const App = () => {
   }, [search, text, sourceAndTarget]);
 
   useEffect(() => {
-    console.log('useEffect 2');
-
-    const sentences = getAll();
-
-    console.log('sentences', sentences.length);
+    // console.log('useEffect 2');
+    getAll().map(m => {
+      console.log('m', m.id);
+    });
   }, []);
 
   return (
