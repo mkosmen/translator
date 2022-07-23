@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useRef, useState, useEffect} from 'react';
 import {SafeAreaView, StyleSheet} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import Header from './components/Header';
@@ -12,13 +12,13 @@ import {
 import {debounce} from 'lodash';
 
 const App = () => {
-  const [text, setText] = React.useState<string>('');
-  const [translatedText, setTranslatedText] = React.useState<string>('');
-  const [sourceAndTarget, setSourceAndTarget] =
-    React.useState<SourceAndTargetProps>({
-      source: 'tr',
-      target: 'en',
-    });
+  const [text, setText] = useState<string>('');
+  const [translatedText, setTranslatedText] = useState<string>('');
+  const [sourceAndTarget, setSourceAndTarget] = useState<SourceAndTargetProps>({
+    source: 'tr',
+    target: 'en',
+  });
+  const [showActions, setShowActions] = useState<boolean>(text !== '');
 
   const handleChange = (q: string) => {
     search.cancel();
@@ -29,15 +29,18 @@ const App = () => {
     setSourceAndTarget(langs);
   };
 
-  const search = React.useRef(
+  const search = useRef(
     debounce(async (props: TranslateProps) => {
       const result = await translate(props);
-
       setTranslatedText(result);
-    }, 150),
+    }, 100),
   ).current;
 
-  React.useEffect(() => {
+  const handleClear = () => {
+    setText('');
+  };
+
+  useEffect(() => {
     if (text) {
       search({
         q: text,
@@ -48,6 +51,8 @@ const App = () => {
       setTranslatedText('');
     }
 
+    setShowActions(text !== '');
+
     return () => {
       search.cancel();
     };
@@ -56,9 +61,10 @@ const App = () => {
   return (
     <GestureHandlerRootView style={styles.gesture}>
       <SafeAreaView style={styles.container}>
-        <Header />
+        <Header showActions={showActions} handleClear={handleClear} />
 
         <Body
+          text={text}
           source={sourceAndTarget.source}
           target={sourceAndTarget.target}
           handleChange={handleChange}

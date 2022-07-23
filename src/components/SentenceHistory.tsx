@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     width: '100%',
     textAlign: 'center',
+    color: '#333',
   },
   item: {
     display: 'flex',
@@ -71,6 +72,7 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: 18,
     paddingRight: 30,
+    color: '#333',
   },
   itemDeleteButton: {
     marginLeft: 'auto',

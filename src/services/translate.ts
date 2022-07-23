@@ -23,6 +23,8 @@ export const translate = async (props: TranslateProps) => {
 
     return response.translatedText;
   } catch (errors) {
+    console.log('translate error:', errors);
+
     return null;
   }
 };
