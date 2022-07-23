@@ -34,7 +34,6 @@ const App = () => {
       const result = await translate(props);
 
       setTranslatedText(result);
-      console.log('result', result);
     }, 150),
   ).current;
 
