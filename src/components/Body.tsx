@@ -1,20 +1,24 @@
-import React from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   StyleSheet,
   TextInput,
   View,
   Text,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
+import Modal from 'react-native-modal';
+import Voice, {SpeechResultsEvent} from '@react-native-community/voice';
 import {Languages, getLanguageText} from '@utils/const';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type Props = {
   children?: React.ReactNode;
+  text?: string;
   translatedText?: string;
   source: Languages;
   target: Languages;
-  handleChange?: (text: string) => void;
+  handleChange: (text: string) => void;
   handleChangeSourceAndTarget?: ({
     source,
     target,
@@ -25,16 +29,34 @@ type Props = {
 };
 
 const Body = (props: Props) => {
-  const [sourceLanguage, setSourceLanguage] = React.useState<Languages>(
-    props.source,
-  );
-  const [targetLanguage, setTargetLanguage] = React.useState<Languages>(
-    props.target,
-  );
+  const [searchText, setSearchText] = useState<string | undefined>(props.text);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [sourceLanguage, setSourceLanguage] = useState<Languages>(props.source);
+  const [targetLanguage, setTargetLanguage] = useState<Languages>(props.target);
+
+  const startSpeechRecognizing = async () => {
+    try {
+      await Voice.start(sourceLanguage === 'en' ? 'en-US' : 'tr-TR');
+
+      setModalVisible(true);
+    } catch (e) {
+      Alert.alert('Bir hata oluştu');
+    }
+  };
+
+  const stopSpeechRecognizing = async () => {
+    setModalVisible(false);
+
+    try {
+      await Voice.stop();
+    } catch (e) {
+      Alert.alert('Bir hata oluştu');
+    }
+  };
 
   const changeSourceOrTarget = () => {
-    const newSourceLanguage = sourceLanguage === 'en' ? 'tr' : 'en';
-    const newTargetLanguage = newSourceLanguage === 'en' ? 'tr' : 'en';
+    const newSourceLanguage = targetLanguage;
+    const newTargetLanguage = sourceLanguage;
 
     setSourceLanguage(newSourceLanguage);
     setTargetLanguage(newTargetLanguage);
@@ -45,13 +67,46 @@ const Body = (props: Props) => {
     });
   };
 
+  const handleTextChange = useCallback(
+    (q: string) => {
+      setSearchText(q);
+
+      props.handleChange(q);
+    },
+    [props],
+  );
+
+  useEffect(() => {
+    Voice.onSpeechError = (e: any) => {
+      const error = JSON.stringify(e.error);
+      Alert.alert('Bir hata oluştu', error);
+    };
+
+    Voice.onSpeechResults = (e: SpeechResultsEvent) => {
+      const results = e.value;
+
+      handleTextChange(results?.[0] ?? '');
+    };
+
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, [handleTextChange]);
+
+  useEffect(() => {
+    setSearchText(props.text);
+  }, [props.text]);
+
   return (
     <View style={styles.container}>
       <View style={styles.inputWrapper}>
         <TextInput
           style={styles.input}
           placeholder="Metin Girin"
-          onChangeText={props.handleChange}
+          placeholderTextColor="#999"
+          value={searchText}
+          multiline={true}
+          onChangeText={handleTextChange}
           maxLength={1000}
         />
       </View>
@@ -92,7 +147,10 @@ const Body = (props: Props) => {
       </View>
 
       <View style={styles.voiceWrapper}>
-        <TouchableOpacity style={styles.voiceButton}>
+        <TouchableOpacity
+          style={styles.voiceButton}
+          onLongPress={startSpeechRecognizing}
+          onPressOut={stopSpeechRecognizing}>
           <MaterialCommunityIcons
             name="microphone-outline"
             size={32}
@@ -100,6 +158,19 @@ const Body = (props: Props) => {
           />
         </TouchableOpacity>
       </View>
+
+      <Modal isVisible={modalVisible}>
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <MaterialCommunityIcons
+              name="microphone-outline"
+              size={32}
+              style={styles.modalTextIcon}
+            />
+            <Text style={styles.modalText}>Kayıt Başlatıldı</Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -108,11 +179,14 @@ const styles = StyleSheet.create({
   container: {
     padding: 15,
   },
-  inputWrapper: {},
+  inputWrapper: {
+    width: '100%',
+  },
   input: {
     width: '100%',
-    fontSize: 25,
+    fontSize: 18,
     padding: 5,
+    color: '#444',
   },
   divider: {},
   resultWrapper: {},
@@ -123,6 +197,7 @@ const styles = StyleSheet.create({
     width: '100%',
     fontSize: 25,
     padding: 5,
+    color: '#333',
   },
   actions: {
     display: 'flex',
@@ -159,6 +234,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     borderRadius: 50,
     padding: 15,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  modalView: {
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    minHeight: 180,
+  },
+  modalText: {
+    textAlign: 'center',
+    fontWeight: '500',
+    fontSize: 18,
+    color: '#333',
+  },
+  modalTextIcon: {
+    backgroundColor: '#d0d0d0',
+    padding: 15,
+    borderRadius: 30,
+    marginBottom: 20,
+    color: '#333',
   },
 });
 
