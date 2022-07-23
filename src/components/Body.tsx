@@ -29,8 +29,8 @@ const Body = () => {
 
   React.useEffect(() => {
     const fetchData = debounce(async () => {
-      create(translateValues.q);
       const result = await translate(translateValues);
+      create(translateValues.q);
 
       setTranslatedText(result);
     }, 100);
