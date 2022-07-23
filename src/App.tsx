@@ -10,6 +10,7 @@ import {
   SourceAndTargetProps,
 } from '@services/translate';
 import {debounce} from 'lodash';
+import {create, getAll} from '@models/translate';
 
 const App = () => {
   const [text, setText] = useState<string>('');
@@ -21,18 +22,26 @@ const App = () => {
   const [showActions, setShowActions] = useState<boolean>(text !== '');
 
   const handleChange = (q: string) => {
-    search.cancel();
+    console.log('handleChange');
+
+    search?.cancel();
     setText(q);
   };
 
   const handleChangeSourceAndTarget = (langs: SourceAndTargetProps) => {
+    console.log('handleChangeSourceAndTarget');
     setSourceAndTarget(langs);
   };
 
   const search = useRef(
     debounce(async (props: TranslateProps) => {
+      console.log('debounce search');
       const result = await translate(props);
+
       setTranslatedText(result);
+
+      // TODO: Problem burada
+      // ({text: result, source: props.source, target: props.target});
     }, 100),
   ).current;
 
@@ -41,6 +50,7 @@ const App = () => {
   };
 
   useEffect(() => {
+    console.log('useEffect 1');
     if (text) {
       search({
         q: text,
@@ -57,6 +67,14 @@ const App = () => {
       search.cancel();
     };
   }, [search, text, sourceAndTarget]);
+
+  useEffect(() => {
+    console.log('useEffect 2');
+
+    const sentences = getAll();
+
+    console.log('sentences', sentences.length);
+  }, []);
 
   return (
     <GestureHandlerRootView style={styles.gesture}>

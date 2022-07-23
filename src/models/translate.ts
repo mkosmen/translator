@@ -1,41 +1,47 @@
 import Realm from 'realm';
 const {UUID} = Realm.BSON;
 
-export const SENTENCE_SCHEMA = 'Sentences';
-
-// interface schemaInterface {
-//   id: string;
-//   sentence: string;
-//   createdAt: Date;
-// }
-
-export const SentenceSchema = {
-  name: SENTENCE_SCHEMA,
-  primaryKey: 'id',
+const Sentence = {
+  name: 'Sentence',
   properties: {
-    id: 'string',
-    sentence: 'string',
+    _id: 'uuid',
+    text: 'string',
+    source: 'string',
+    target: 'string',
     createdAt: 'date',
   },
+  primaryKey: '_id',
 };
 
 const databaseOptions = {
-  schema: [SentenceSchema],
-  schemaVersion: 6,
+  path: 'translator.realm',
+  schema: [Sentence],
+  schemaVersion: 2,
 };
 
 const realm = new Realm(databaseOptions);
 
-export const create = (sentence: string) => {
-  const data = {
-    id: new UUID().toHexString(),
-    sentence,
-    createdAt: new Date(),
-  };
+type createProps = {
+  text: string;
+  source: string;
+  target: string;
+};
+export const create = (props: createProps) => {
+  try {
+    const data = {
+      _id: new UUID(),
+      createdAt: new Date(),
+      ...props,
+    };
 
-  realm.write(() => {
-    realm.create(SENTENCE_SCHEMA, data);
-  });
+    console.log('record data', data);
+
+    realm.write(() => {
+      realm.create('Sentence', data);
+    });
+  } catch (errors) {
+    console.log('create record error', errors);
+  }
 };
 
-export const getAll = () => realm.objects(SENTENCE_SCHEMA);
+export const getAll = () => realm.objects('Sentence');
