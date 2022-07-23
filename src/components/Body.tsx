@@ -6,61 +6,42 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import debounce from 'lodash.debounce';
-import {translate} from '../services/translate';
-import {Languages, getLanguageText} from '../utils/const';
+import {Languages, getLanguageText} from '@utils/const';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {create} from '../models/translate';
 
-interface TranslateValueObject {
-  q: string;
+type Props = {
+  children?: React.ReactNode;
+  translatedText?: string;
   source: Languages;
   target: Languages;
-}
+  handleChange?: (text: string) => void;
+  handleChangeSourceAndTarget?: ({
+    source,
+    target,
+  }: {
+    source: Languages;
+    target: Languages;
+  }) => void;
+};
 
-const Body = () => {
-  const [translateValues, setTranslateValues] =
-    React.useState<TranslateValueObject>({
-      q: '',
-      source: 'tr',
-      target: 'en',
-    });
-  const [translatedText, setTranslatedText] = React.useState<string>('');
+const Body = (props: Props) => {
+  const [sourceLanguage, setSourceLanguage] = React.useState<Languages>(
+    props.source,
+  );
+  const [targetLanguage, setTargetLanguage] = React.useState<Languages>(
+    props.target,
+  );
 
-  React.useEffect(() => {
-    const fetchData = debounce(async () => {
-      const result = await translate(translateValues);
-      create(translateValues.q);
-
-      setTranslatedText(result);
-    }, 100);
-
-    translateValues.q && fetchData();
-  }, [translateValues]);
-
-  const handleChange = (text: string) => {
-    setTranslateValues(old => {
-      return {
-        ...old,
-        q: text,
-      };
-    });
-
-    if (!text) {
-      setTranslatedText('');
-    }
-  };
-
-  const setSourceAndTargetLanguage = () => {
-    const newSourceLanguage = translateValues.source === 'en' ? 'tr' : 'en';
+  const changeSourceOrTarget = () => {
+    const newSourceLanguage = sourceLanguage === 'en' ? 'tr' : 'en';
     const newTargetLanguage = newSourceLanguage === 'en' ? 'tr' : 'en';
 
-    setTranslateValues(old => {
-      return {
-        ...old,
-        source: newSourceLanguage,
-        target: newTargetLanguage,
-      };
+    setSourceLanguage(newSourceLanguage);
+    setTargetLanguage(newTargetLanguage);
+
+    props.handleChangeSourceAndTarget?.({
+      source: newSourceLanguage,
+      target: newTargetLanguage,
     });
   };
 
@@ -70,8 +51,7 @@ const Body = () => {
         <TextInput
           style={styles.input}
           placeholder="Metin Girin"
-          defaultValue={translateValues.q}
-          onChangeText={handleChange}
+          onChangeText={props.handleChange}
           maxLength={1000}
         />
       </View>
@@ -81,21 +61,21 @@ const Body = () => {
       <View
         style={[
           styles.resultWrapper,
-          translatedText ? styles.hasTranslatedText : '',
+          props.translatedText ? styles.hasTranslatedText : '',
         ]}>
-        <Text style={styles.result}>{translatedText}</Text>
+        <Text style={styles.result}>{props.translatedText}</Text>
       </View>
 
       <View style={styles.actions}>
         <View style={[styles.actionItem, styles.langLabel]}>
           <Text style={styles.langLabelText}>
-            {getLanguageText(translateValues.source)}
+            {getLanguageText(sourceLanguage)}
           </Text>
         </View>
         <View style={styles.langSelector}>
           <TouchableOpacity
             style={styles.langButton}
-            onPress={setSourceAndTargetLanguage}
+            onPress={changeSourceOrTarget}
             activeOpacity={1}>
             <MaterialCommunityIcons
               name="swap-horizontal"
@@ -106,7 +86,7 @@ const Body = () => {
         </View>
         <View style={[styles.actionItem, styles.langLabel]}>
           <Text style={styles.langLabelText}>
-            {getLanguageText(translateValues.target)}
+            {getLanguageText(targetLanguage)}
           </Text>
         </View>
       </View>

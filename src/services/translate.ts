@@ -1,15 +1,15 @@
 import {Languages} from '../utils/const';
 
-interface TranslateProps {
-  q: string;
+export interface SourceAndTargetProps {
   source: Languages;
   target: Languages;
+}
+export interface TranslateProps extends SourceAndTargetProps {
+  q: string;
 }
 
 export const translate = async (props: TranslateProps) => {
   try {
-    console.log('props', props);
-
     const response = await (
       await fetch('https://translate.argosopentech.com/translate', {
         method: 'POST',
