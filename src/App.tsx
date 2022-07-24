@@ -40,10 +40,12 @@ const App = () => {
 
       setTranslatedText(result);
 
-      create(db, props);
-      getAll(db).then(d => {
-        setSentences(d);
-      });
+      if (props.sentence.length > 1) {
+        create(db, props);
+        getAll(db).then(d => {
+          setSentences(d);
+        });
+      }
     }, 100),
   ).current;
 
@@ -110,7 +112,7 @@ const App = () => {
         </SafeAreaView>
       ) : (
         <View>
-          <Text>Loading</Text>
+          <Text>Lütfen Bekleyin</Text>
         </View>
       )}
     </GestureHandlerRootView>
