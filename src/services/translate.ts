@@ -29,7 +29,6 @@ export const getAll = async (
 
     return items;
   } catch (error) {
-    console.error(error);
     throw Error('Failed to get translationItems !!!');
   }
 };
@@ -48,4 +47,27 @@ export const remove = async (db: SQLiteDatabase, id: number) => {
   const deleteQuery = `DELETE from ${tableName} where rowid = ${id}`;
 
   await db.executeSql(deleteQuery);
+};
+
+export const isExist = async (
+  db: SQLiteDatabase,
+  translationItem: {sentence: string; source: string},
+) => {
+  const insertQuery = `select 1 from ${tableName}
+  where sentence = '${translationItem.sentence}' and source = '${translationItem.source}' limit 1`;
+
+  const results = await db.executeSql(insertQuery);
+
+  return results[0].rows.length > 0;
+};
+
+export const getOne = async (
+  db: SQLiteDatabase,
+  rowid: number,
+): Promise<TranslationItem | undefined> => {
+  const insertQuery = `select * from ${tableName} where rowid = '${rowid}'`;
+
+  const results = await db.executeSql(insertQuery);
+
+  return results[0].rows.item(0);
 };
