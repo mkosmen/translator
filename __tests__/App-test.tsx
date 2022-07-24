@@ -1,14 +1,12 @@
-/**
- * @format
- */
-
 import 'react-native';
-import React from 'react';
-import App from '../src/App';
+import {translate} from '@utils/translate';
 
-// Note: test renderer must be required after react-native.
-import renderer from 'react-test-renderer';
+it('renders correctly', async () => {
+  const result = await translate({
+    sentence: 'Merhaba',
+    source: 'tr',
+    target: 'en',
+  });
 
-it('renders correctly', () => {
-  renderer.create(<App />);
+  return result === null;
 });
