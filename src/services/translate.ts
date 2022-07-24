@@ -1,30 +1,51 @@
-import {Languages} from '../utils/const';
+import {SQLiteDatabase} from 'react-native-sqlite-storage';
+import {TranslationItem, SentenceItem} from '@models/index';
+export const tableName = 'translations';
 
-export interface SourceAndTargetProps {
-  source: Languages;
-  target: Languages;
-}
-export interface TranslateProps extends SourceAndTargetProps {
-  q: string;
-}
+export const createTable = async (db: SQLiteDatabase) => {
+  const query = `CREATE TABLE IF NOT EXISTS ${tableName}(
+        rowid INTEGER PRIMARY KEY,
+        sentence text not null,
+        source text not null,
+        target text not null
+    );`;
 
-export const translate = async (props: TranslateProps) => {
+  await db.executeSql(query);
+};
+
+export const getAll = async (
+  db: SQLiteDatabase,
+): Promise<SentenceItem[] | undefined> => {
   try {
-    const response = await (
-      await fetch('https://translate.argosopentech.com/translate', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(props),
-      })
-    ).json();
+    const items: SentenceItem[] = [];
 
-    return response.translatedText;
-  } catch (errors) {
-    console.log('translate error:', errors);
+    const results = await db.executeSql(`SELECT * FROM ${tableName}`);
 
-    return null;
+    results.forEach(result => {
+      for (let index = 0; index < result.rows.length; index++) {
+        items.push(result.rows.item(index));
+      }
+    });
+
+    return items;
+  } catch (error) {
+    console.error(error);
+    throw Error('Failed to get translationItems !!!');
   }
+};
+
+export const create = async (
+  db: SQLiteDatabase,
+  translationItem: TranslationItem,
+) => {
+  const insertQuery = `INSERT INTO ${tableName}(sentence, source, target)
+  values ('${translationItem.sentence}', '${translationItem.source}', '${translationItem.target}')`;
+
+  return db.executeSql(insertQuery);
+};
+
+export const remove = async (db: SQLiteDatabase, id: number) => {
+  const deleteQuery = `DELETE from ${tableName} where rowid = ${id}`;
+
+  await db.executeSql(deleteQuery);
 };

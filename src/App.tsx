@@ -1,18 +1,19 @@
 import React, {useRef, useState, useEffect} from 'react';
-import {SafeAreaView, StyleSheet} from 'react-native';
+import {SafeAreaView, StyleSheet, View, Text} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import Header from './components/Header';
 import Body from './components/Body';
 import SentenceHistory from './components/SentenceHistory';
-import {
-  translate,
-  TranslateProps,
-  SourceAndTargetProps,
-} from '@services/translate';
+import {translate, TranslateProps, SourceAndTargetProps} from 'utils/translate';
 import {debounce} from 'lodash';
-import {create, getAll} from '@models/translate';
+import {createTable, create, getAll} from '@services/translate';
+import {getDBConnection} from '@utils/database';
+import {SentenceItem} from '@models/index';
+import {ToastProvider} from 'react-native-toast-notifications';
 
 const App = () => {
+  // const toast = useToast();
+  const [isReady, setIsReady] = useState<boolean>(false);
   const [text, setText] = useState<string>('');
   const [translatedText, setTranslatedText] = useState<string>('');
   const [sourceAndTarget, setSourceAndTarget] = useState<SourceAndTargetProps>({
@@ -20,10 +21,9 @@ const App = () => {
     target: 'en',
   });
   const [showActions, setShowActions] = useState<boolean>(text !== '');
+  const [sentences, setSentences] = useState<SentenceItem[] | undefined>();
 
   const handleChange = (q: string) => {
-    console.log('handleChange');
-
     search?.cancel();
     setText(q);
   };
@@ -35,12 +35,17 @@ const App = () => {
 
   const search = useRef(
     debounce(async (props: TranslateProps) => {
-      const result = await translate(props);
+      const [result, db] = await Promise.all([
+        translate(props),
+        getDBConnection(),
+      ]);
 
       setTranslatedText(result);
 
-      // TODO: Problem burada
-      create({text: props.q, source: props.source, target: props.target});
+      create(db, props);
+      getAll(db).then(d => {
+        setSentences(d);
+      });
     }, 100),
   ).current;
 
@@ -48,11 +53,23 @@ const App = () => {
     setText('');
   };
 
+  const handleDelete = (rowid: number) => {
+    const newSentences = sentences?.filter(s => s.rowid !== rowid);
+
+    setSentences(newSentences);
+
+    // toast?.show('Kelime silindi', {
+    //   type: 'success',
+    //   placement: 'bottom',
+    //   duration: 4000,
+    //   animationType: 'slide-in',
+    // });
+  };
+
   useEffect(() => {
-    console.log('useEffect 1');
     if (text) {
       search({
-        q: text,
+        sentence: text,
         source: sourceAndTarget.source,
         target: sourceAndTarget.target,
       });
@@ -68,29 +85,46 @@ const App = () => {
   }, [search, text, sourceAndTarget]);
 
   useEffect(() => {
-    // console.log('useEffect 2');
-    getAll().map(m => {
-      console.log('m', m.id);
+    const createTableIfNotExists = async () => {
+      const db = await getDBConnection();
+      await createTable(db);
+
+      return db;
+    };
+
+    createTableIfNotExists().then(async d => {
+      const results = await getAll(d);
+      setSentences(results);
+
+      setIsReady(true);
     });
   }, []);
 
   return (
-    <GestureHandlerRootView style={styles.gesture}>
-      <SafeAreaView style={styles.container}>
-        <Header showActions={showActions} handleClear={handleClear} />
+    <ToastProvider>
+      <GestureHandlerRootView style={styles.gesture}>
+        {isReady ? (
+          <SafeAreaView style={styles.container}>
+            <Header showActions={showActions} handleClear={handleClear} />
 
-        <Body
-          text={text}
-          source={sourceAndTarget.source}
-          target={sourceAndTarget.target}
-          handleChange={handleChange}
-          handleChangeSourceAndTarget={handleChangeSourceAndTarget}
-          translatedText={translatedText}
-        />
+            <Body
+              text={text}
+              source={sourceAndTarget.source}
+              target={sourceAndTarget.target}
+              handleChange={handleChange}
+              handleChangeSourceAndTarget={handleChangeSourceAndTarget}
+              translatedText={translatedText}
+            />
 
-        <SentenceHistory />
-      </SafeAreaView>
-    </GestureHandlerRootView>
+            <SentenceHistory items={sentences} handleDelete={handleDelete} />
+          </SafeAreaView>
+        ) : (
+          <View>
+            <Text>Loading</Text>
+          </View>
+        )}
+      </GestureHandlerRootView>
+    </ToastProvider>
   );
 };
 
