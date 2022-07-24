@@ -60,3 +60,14 @@ export const isExist = async (
 
   return results[0].rows.length > 0;
 };
+
+export const getOne = async (
+  db: SQLiteDatabase,
+  rowid: number,
+): Promise<TranslationItem | undefined> => {
+  const insertQuery = `select * from ${tableName} where rowid = '${rowid}'`;
+
+  const results = await db.executeSql(insertQuery);
+
+  return results[0].rows.item(0);
+};

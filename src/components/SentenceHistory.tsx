@@ -5,21 +5,30 @@ import BottomSheet, {
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AntDesign from 'react-native-vector-icons/AntDesign';
 import {SentenceItem} from '@models/index';
 
 type Props = {
   items?: SentenceItem[];
   handleDelete?: (rowid: number) => void;
+  handleSelect?: (rowid: number) => void;
 };
 
 const SentenceHistory = (props: Props) => {
   const {items} = props;
   const sheetRef = React.useRef<BottomSheet>(null);
-  const snapPoints = React.useMemo(() => ['5%', '90%'], []);
+  const snapPoints = React.useMemo(() => ['5%', '75%'], []);
 
   const renderItem = ({item}: {item: SentenceItem}) => {
     return (
       <View style={styles.item}>
+        <TouchableOpacity
+          style={styles.itemSelectButton}
+          activeOpacity={1}
+          onPress={() => props?.handleSelect?.(item.rowid)}>
+          <AntDesign name="select1" size={21} color="blue" />
+        </TouchableOpacity>
+
         <View style={styles.textContainer}>
           <Text style={styles.languages}>
             {item.source} - {item.target}
@@ -105,6 +114,9 @@ const styles = StyleSheet.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  itemSelectButton: {
+    marginRight: 10,
   },
 });
 

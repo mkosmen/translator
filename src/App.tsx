@@ -1,5 +1,5 @@
 import React, {useRef, useState, useEffect} from 'react';
-import {SafeAreaView, StyleSheet, View, Text} from 'react-native';
+import {SafeAreaView, StyleSheet, View, Text, ToastAndroid} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import Header from './components/Header';
 import Body from './components/Body';
@@ -12,28 +12,36 @@ import {
   getAll,
   isExist,
   remove,
+  getOne,
 } from '@services/translate';
 import {getDBConnection} from '@utils/database';
 import {SentenceItem} from '@models/index';
 
 const App = () => {
   const [isReady, setIsReady] = useState<boolean>(false);
-  const [text, setText] = useState<string>('');
   const [translatedText, setTranslatedText] = useState<string>('');
-  const [sourceAndTarget, setSourceAndTarget] = useState<SourceAndTargetProps>({
+  const [translationData, setTranslationData] = useState<TranslateProps>({
+    sentence: '',
     source: 'tr',
     target: 'en',
   });
-  const [showActions, setShowActions] = useState<boolean>(text !== '');
+  const [showActions, setShowActions] = useState<boolean>(
+    translationData.sentence !== '',
+  );
   const [sentences, setSentences] = useState<SentenceItem[] | undefined>();
 
   const handleChange = (q: string) => {
     search?.cancel();
-    setText(q);
+    setTranslationData(old => ({...old, sentence: q}));
   };
 
   const handleChangeSourceAndTarget = (langs: SourceAndTargetProps) => {
-    setSourceAndTarget(langs);
+    setTranslationData(old => {
+      return {
+        ...old,
+        ...langs,
+      };
+    });
   };
 
   const search = useRef(
@@ -62,7 +70,7 @@ const App = () => {
   ).current;
 
   const handleClear = () => {
-    setText('');
+    setTranslationData(old => ({...old, sentence: ''}));
   };
 
   const handleDelete = async (rowid: number) => {
@@ -76,23 +84,39 @@ const App = () => {
     } catch (error) {}
   };
 
+  const handleSelect = async (rowid: number) => {
+    try {
+      const db = await getDBConnection();
+      const data = await getOne(db, rowid);
+
+      if (data) {
+        setTranslationData(old => ({
+          ...old,
+          sentence: data.sentence,
+          source: data.source,
+          target: data.target,
+        }));
+
+        ToastAndroid.show('Cümle kalıbı seçildi', ToastAndroid.SHORT);
+      }
+    } catch (error) {}
+  };
+
   useEffect(() => {
-    if (text) {
-      search({
-        sentence: text,
-        source: sourceAndTarget.source,
-        target: sourceAndTarget.target,
-      });
+    console.log('translationData', translationData);
+
+    if (translationData.sentence) {
+      search(translationData);
     } else {
       setTranslatedText('');
     }
 
-    setShowActions(text !== '');
+    setShowActions(translationData.sentence !== '');
 
     return () => {
       search.cancel();
     };
-  }, [search, text, sourceAndTarget]);
+  }, [search, translationData]);
 
   useEffect(() => {
     const createTableIfNotExists = async () => {
@@ -117,15 +141,19 @@ const App = () => {
           <Header showActions={showActions} handleClear={handleClear} />
 
           <Body
-            text={text}
-            source={sourceAndTarget.source}
-            target={sourceAndTarget.target}
+            text={translationData.sentence}
+            source={translationData.source}
+            target={translationData.target}
             handleChange={handleChange}
             handleChangeSourceAndTarget={handleChangeSourceAndTarget}
             translatedText={translatedText}
           />
 
-          <SentenceHistory items={sentences} handleDelete={handleDelete} />
+          <SentenceHistory
+            items={sentences}
+            handleDelete={handleDelete}
+            handleSelect={handleSelect}
+          />
         </SafeAreaView>
       ) : (
         <View>
