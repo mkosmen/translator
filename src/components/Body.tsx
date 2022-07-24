@@ -29,12 +29,12 @@ type Props = {
 };
 
 const Body = (props: Props) => {
-  const {handleChange, text} = props;
+  const {handleChange, text, source, target} = props;
 
   const [searchText, setSearchText] = useState<string | undefined>(text);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [sourceLanguage, setSourceLanguage] = useState<Languages>(props.source);
-  const [targetLanguage, setTargetLanguage] = useState<Languages>(props.target);
+  const [sourceLanguage, setSourceLanguage] = useState<Languages>(source);
+  const [targetLanguage, setTargetLanguage] = useState<Languages>(target);
 
   const startSpeechRecognizing = async () => {
     try {
@@ -98,6 +98,11 @@ const Body = (props: Props) => {
   useEffect(() => {
     setSearchText(text);
   }, [text]);
+
+  useEffect(() => {
+    setSourceLanguage(source);
+    setTargetLanguage(target);
+  }, [source, target]);
 
   return (
     <View style={styles.container}>
