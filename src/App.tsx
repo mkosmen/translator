@@ -27,7 +27,6 @@ const App = () => {
   };
 
   const handleChangeSourceAndTarget = (langs: SourceAndTargetProps) => {
-    console.log('handleChangeSourceAndTarget');
     setSourceAndTarget(langs);
   };
 
