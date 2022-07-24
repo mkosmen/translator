@@ -1,17 +1,17 @@
 import React, {useRef, useState, useEffect} from 'react';
-import {SafeAreaView, StyleSheet} from 'react-native';
+import {SafeAreaView, StyleSheet, View, Text} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import Header from './components/Header';
 import Body from './components/Body';
 import SentenceHistory from './components/SentenceHistory';
-import {
-  translate,
-  TranslateProps,
-  SourceAndTargetProps,
-} from '@services/translate';
+import {translate, TranslateProps, SourceAndTargetProps} from 'utils/translate';
 import {debounce} from 'lodash';
+import {createTable, create, getAll} from '@services/translate';
+import {getDBConnection} from '@utils/database';
+import {SentenceItem} from '@models/index';
 
 const App = () => {
+  const [isReady, setIsReady] = useState<boolean>(false);
   const [text, setText] = useState<string>('');
   const [translatedText, setTranslatedText] = useState<string>('');
   const [sourceAndTarget, setSourceAndTarget] = useState<SourceAndTargetProps>({
@@ -19,20 +19,31 @@ const App = () => {
     target: 'en',
   });
   const [showActions, setShowActions] = useState<boolean>(text !== '');
+  const [sentences, setSentences] = useState<SentenceItem[] | undefined>();
 
   const handleChange = (q: string) => {
-    search.cancel();
+    search?.cancel();
     setText(q);
   };
 
   const handleChangeSourceAndTarget = (langs: SourceAndTargetProps) => {
+    console.log('handleChangeSourceAndTarget');
     setSourceAndTarget(langs);
   };
 
   const search = useRef(
     debounce(async (props: TranslateProps) => {
-      const result = await translate(props);
+      const [result, db] = await Promise.all([
+        translate(props),
+        getDBConnection(),
+      ]);
+
       setTranslatedText(result);
+
+      create(db, props);
+      getAll(db).then(d => {
+        setSentences(d);
+      });
     }, 100),
   ).current;
 
@@ -40,10 +51,16 @@ const App = () => {
     setText('');
   };
 
+  const handleDelete = (rowid: number) => {
+    const newSentences = sentences?.filter(s => s.rowid !== rowid);
+
+    setSentences(newSentences);
+  };
+
   useEffect(() => {
     if (text) {
       search({
-        q: text,
+        sentence: text,
         source: sourceAndTarget.source,
         target: sourceAndTarget.target,
       });
@@ -58,22 +75,44 @@ const App = () => {
     };
   }, [search, text, sourceAndTarget]);
 
+  useEffect(() => {
+    const createTableIfNotExists = async () => {
+      const db = await getDBConnection();
+      await createTable(db);
+
+      return db;
+    };
+
+    createTableIfNotExists().then(async d => {
+      const results = await getAll(d);
+      setSentences(results);
+
+      setIsReady(true);
+    });
+  }, []);
+
   return (
     <GestureHandlerRootView style={styles.gesture}>
-      <SafeAreaView style={styles.container}>
-        <Header showActions={showActions} handleClear={handleClear} />
+      {isReady ? (
+        <SafeAreaView style={styles.container}>
+          <Header showActions={showActions} handleClear={handleClear} />
 
-        <Body
-          text={text}
-          source={sourceAndTarget.source}
-          target={sourceAndTarget.target}
-          handleChange={handleChange}
-          handleChangeSourceAndTarget={handleChangeSourceAndTarget}
-          translatedText={translatedText}
-        />
+          <Body
+            text={text}
+            source={sourceAndTarget.source}
+            target={sourceAndTarget.target}
+            handleChange={handleChange}
+            handleChangeSourceAndTarget={handleChangeSourceAndTarget}
+            translatedText={translatedText}
+          />
 
-        <SentenceHistory />
-      </SafeAreaView>
+          <SentenceHistory items={sentences} handleDelete={handleDelete} />
+        </SafeAreaView>
+      ) : (
+        <View>
+          <Text>Loading</Text>
+        </View>
+      )}
     </GestureHandlerRootView>
   );
 };
