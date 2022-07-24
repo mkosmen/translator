@@ -6,7 +6,13 @@ import Body from './components/Body';
 import SentenceHistory from './components/SentenceHistory';
 import {translate, TranslateProps, SourceAndTargetProps} from 'utils/translate';
 import {debounce} from 'lodash';
-import {createTable, create, getAll} from '@services/translate';
+import {
+  createTable,
+  create,
+  getAll,
+  isExist,
+  remove,
+} from '@services/translate';
 import {getDBConnection} from '@utils/database';
 import {SentenceItem} from '@models/index';
 
@@ -40,10 +46,17 @@ const App = () => {
       setTranslatedText(result);
 
       if (props.sentence.length > 1) {
-        create(db, props);
-        getAll(db).then(d => {
-          setSentences(d);
+        const recordIsExists = await isExist(db, {
+          sentence: props.sentence,
+          source: props.source,
         });
+
+        if (!recordIsExists) {
+          await create(db, props);
+          getAll(db).then(d => {
+            setSentences(d);
+          });
+        }
       }
     }, 100),
   ).current;
@@ -52,10 +65,15 @@ const App = () => {
     setText('');
   };
 
-  const handleDelete = (rowid: number) => {
-    const newSentences = sentences?.filter(s => s.rowid !== rowid);
+  const handleDelete = async (rowid: number) => {
+    try {
+      const db = await getDBConnection();
+      await remove(db, rowid);
 
-    setSentences(newSentences);
+      const newSentences = sentences?.filter(s => s.rowid !== rowid);
+
+      setSentences(newSentences);
+    } catch (error) {}
   };
 
   useEffect(() => {
